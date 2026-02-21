@@ -22,17 +22,17 @@ def get_symbol_map_from_db():
     try:
         # Fetch from new table
         res = client.execute("""
-            SELECT display_name, yahoo_ticker, massive_ticker, binance_ticker, priority_1, priority_2, priority_3 
+            SELECT display_name, yahoo_ticker, capital_epic, binance_ticker, priority_1, priority_2, priority_3 
             FROM market_symbols 
             ORDER BY display_name
-        """)
+        """).fetchall()
         
         # Return a dictionary structured for the app
         inventory = {}
-        for row in res.rows:
+        for row in res:
             inventory[row[0]] = {
                 'yahoo_ticker': row[1],
-                'massive_ticker': row[2],
+                'massive_ticker': row[2], # keeping the internal dict key name the same so we don't break the UI
                 'binance_ticker': row[3],
                 'p1': row[4],
                 'p2': row[5],
@@ -50,17 +50,18 @@ def upsert_symbol_mapping(display_name, y_ticker, m_ticker, b_ticker, p1, p2, p3
     try:
         # Check if column exists, if not, migration handles it, but safe insert:
         client.execute(
-            """INSERT INTO market_symbols (display_name, yahoo_ticker, massive_ticker, binance_ticker, priority_1, priority_2, priority_3) 
+            """INSERT INTO market_symbols (display_name, yahoo_ticker, capital_epic, binance_ticker, priority_1, priority_2, priority_3) 
                VALUES (?, ?, ?, ?, ?, ?, ?) 
                ON CONFLICT(display_name) DO UPDATE SET 
                  yahoo_ticker=excluded.yahoo_ticker, 
-                 massive_ticker=excluded.massive_ticker,
+                 capital_epic=excluded.capital_epic,
                  binance_ticker=excluded.binance_ticker,
                  priority_1=excluded.priority_1,
                  priority_2=excluded.priority_2,
                  priority_3=excluded.priority_3""",
-            [display_name, y_ticker, m_ticker, b_ticker, p1, p2, p3]
+            (display_name, y_ticker, m_ticker, b_ticker, p1, p2, p3)
         )
+        client.commit()
         return True
     except Exception as e:
         st.error(f"Error saving symbol: {e}")
@@ -72,7 +73,8 @@ def delete_symbol_mapping(ticker):
     if not client:
         return False
     try:
-        client.execute("DELETE FROM market_symbols WHERE display_name = ?", [ticker])
+        client.execute("DELETE FROM market_symbols WHERE display_name = ?", (ticker,))
+        client.commit()
         return True
     except Exception as e:
         st.error(f"Error deleting symbol: {e}")
@@ -128,7 +130,7 @@ def save_data_to_turso(df: pd.DataFrame, logger=None):
         for i in range(0, len(rows_to_insert), BATCH_SIZE):
             batch = rows_to_insert[i : i + BATCH_SIZE]
             placeholders = ", ".join(["(?, ?, ?, ?, ?, ?, ?, ?)"] * len(batch))
-            flat_values = [item for sublist in batch for item in sublist]
+            flat_values = tuple(item for sublist in batch for item in sublist)
             
             query = f"""
                 INSERT OR REPLACE INTO market_data 
@@ -138,6 +140,7 @@ def save_data_to_turso(df: pd.DataFrame, logger=None):
             client.execute(query, flat_values)
             time.sleep(0.05) # Gentle on the DB
             
+        client.commit()
         return True
 
     except Exception as e:
@@ -173,15 +176,15 @@ def fetch_data_health_matrix(tickers: list, start_date, end_date, session_filter
           AND timestamp >= ? 
           AND timestamp <= ?
     """
-    params = tickers + [start_str, end_str]
+    params = tuple(tickers + [start_str, end_str])
     
     try:
-        res = client.execute(query, params)
-        if not res.rows:
+        res = client.execute(query, params).fetchall()
+        if not res:
             return pd.DataFrame()
             
         # Convert to Pandas
-        df = pd.DataFrame([list(row) for row in res.rows], columns=['timestamp', 'symbol', 'session'])
+        df = pd.DataFrame([list(row) for row in res], columns=['timestamp', 'symbol', 'session'])
         
         # 1. Parse UTC String
         df['timestamp'] = pd.to_datetime(df['timestamp']).dt.tz_localize(UTC)
