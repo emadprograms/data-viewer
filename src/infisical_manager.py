@@ -41,6 +41,17 @@ class InfisicalManager:
             except Exception:
                 pass
 
+        if not client_id:
+            try:
+                # Streamlit Cloud injects secrets into st.secrets
+                import streamlit as st
+                if "infisical" in st.secrets:
+                    client_id = st.secrets["infisical"].get("client_id")
+                    client_secret = st.secrets["infisical"].get("client_secret")
+                    self.project_id = st.secrets["infisical"].get("project_id")
+            except Exception:
+                pass
+
         if client_id and client_secret and self.project_id:
             try:
                 # Initialize Infisical Client
