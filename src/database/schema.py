@@ -41,13 +41,13 @@ def init_db():
 
         # Migration: If market_symbols is empty but symbol_map has data, migrate it.
         # This preserves existing user data while moving to the new format.
-        res_new = client.execute("SELECT count(*) FROM market_symbols")
-        res_old = client.execute("SELECT count(*) FROM symbol_map")
+        res_new = client.execute("SELECT count(*) FROM market_symbols").fetchone()
+        res_old = client.execute("SELECT count(*) FROM symbol_map").fetchone()
         
-        if res_new.rows and res_new.rows[0][0] == 0:
-            if res_old.rows and res_old.rows[0][0] > 0:
+        if res_new and res_new[0] == 0:
+            if res_old and res_old[0] > 0:
                 # Migrate!
-                old_rows = client.execute("SELECT user_ticker, capital_epic, source_strategy FROM symbol_map").rows
+                old_rows = client.execute("SELECT user_ticker, capital_epic, source_strategy FROM symbol_map").fetchall()
                 for row in old_rows:
                     user_ticker = row[0]
                     cap_epic = row[1]
@@ -77,7 +77,7 @@ def init_db():
                         """INSERT INTO market_symbols 
                            (display_name, yahoo_ticker, massive_ticker, binance_ticker, priority_1, priority_2) 
                            VALUES (?, ?, ?, ?, ?, ?)""",
-                        [user_ticker, y_ticker, m_ticker, b_ticker, p1, p2]
+                        (user_ticker, y_ticker, m_ticker, b_ticker, p1, p2)
                     )
                 if st.runtime.exists():
                     st.toast("Migrated inventory to new schema.", icon="📦")
@@ -102,7 +102,7 @@ def init_db():
                         """INSERT INTO market_symbols 
                            (display_name, yahoo_ticker, massive_ticker, binance_ticker, priority_1, priority_2) 
                            VALUES (?, ?, ?, ?, ?, ?)""",
-                        [t, y_ticker, m_ticker, b_ticker, p1, p2]
+                        (t, y_ticker, m_ticker, b_ticker, p1, p2)
                     )
 
         

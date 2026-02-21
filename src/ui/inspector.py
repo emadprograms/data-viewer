@@ -212,12 +212,11 @@ def render_inspector_ui(inventory_list):
     # Fetch from Turso
     # ----------------------------------------------------
     try:
-        res = client.execute(query, [selected_ticker, limit])
+        rows = client.execute(query, (selected_ticker, limit)).fetchall()
         cols = [
             'timestamp', 'symbol', 'open', 'high',
             'low', 'close', 'volume', 'session'
         ]
-        rows = res.rows if hasattr(res, 'rows') else res
         df = pd.DataFrame([list(row) for row in rows], columns=cols)
     except Exception as e:
         st.error(f"Query Error: {e}")
