@@ -32,7 +32,7 @@ def get_symbol_map_from_db():
         for row in res:
             inventory[row[0]] = {
                 'yahoo_ticker': row[1],
-                'massive_ticker': row[2], # keeping the internal dict key name the same so we don't break the UI
+                'capital_epic': row[2], 
                 'binance_ticker': row[3],
                 'p1': row[4],
                 'p2': row[5],

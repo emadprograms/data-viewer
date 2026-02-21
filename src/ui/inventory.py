@@ -17,7 +17,7 @@ def render_inventory_ui(db_map, inventory_list):
     st.subheader("📦 Inventory Manager")
     
     # Options
-    SOURCE_OPTIONS = ["YAHOO", "MASSIVE", "BINANCE", "TWELVE_DATA"]
+    SOURCE_OPTIONS = ["YAHOO", "CAPITAL", "BINANCE"]
     
     # --- SECTION 1: ADD NEW SYMBOL ---
     with st.container(border=True):
@@ -30,11 +30,9 @@ def render_inventory_ui(db_map, inventory_list):
             with c1:
                 y_ticker = st.text_input("Yahoo Ticker", value=display_name, help="e.g. BTC-USD, AAPL")
             with c2:
-                m_ticker = st.text_input("Massive Ticker", value=display_name, help="e.g. AAPL")
+                m_ticker = st.text_input("Capital Epic", value=display_name, help="e.g. AAPL")
             with c3:
                 b_ticker = st.text_input("Binance Ticker", value=display_name if "USDT" in display_name else "", help="e.g. BTCUSDT")
-            with c4:
-                td_ticker = st.text_input("TwelveData Ticker", value=display_name, help="e.g. AAPL, WTI/USD")
 
             st.caption("ℹ️ *Default values assume the source uses the same ticker name. Adjust if different.*")
             
@@ -51,7 +49,7 @@ def render_inventory_ui(db_map, inventory_list):
                 p3 = st.selectbox("Priority 3 (Last Resort)", ["NONE"] + SOURCE_OPTIONS, index=0)
         
         if st.button("Save New Symbol", type="primary", disabled=not display_name):
-            if upsert_symbol_mapping(display_name, y_ticker, m_ticker, b_ticker, p1, p2, td_ticker, p3):
+            if upsert_symbol_mapping(display_name, y_ticker, m_ticker, b_ticker, p1, p2, p3):
                 st.success(f"Saved {display_name}")
                 time.sleep(0.5)
                 st.rerun()
@@ -73,32 +71,34 @@ def render_inventory_ui(db_map, inventory_list):
                 st.write(f"**Editing: {selected_ticker}**")
                 
                 with st.expander("🔌 Source Configuration", expanded=True):
-                    ec1, ec2, ec3, ec4 = st.columns(4)
+                    ec1, ec2, ec3 = st.columns(3)
                     with ec1:
                         ny_ticker = st.text_input("Yahoo Ticker", value=data['yahoo_ticker'] or "", key="e_y")
                     with ec2:
-                        nm_ticker = st.text_input("Massive Ticker", value=data['massive_ticker'] or "", key="e_m")
+                        nm_ticker = st.text_input("Capital Epic", value=data['capital_epic'] or "", key="e_m")
                     with ec3:
                         nb_ticker = st.text_input("Binance Ticker", value=data['binance_ticker'] or "", key="e_b")
-                    with ec4:
-                        ntd_ticker = st.text_input("TwelveData Ticker", value=data.get('twelve_data_ticker') or "", key="e_td")
                 
                 with st.expander("⚡ Priority Routing", expanded=True):
                     epc1, epc2, epc3 = st.columns(3)
                     with epc1:
                         curr_p1 = data['p1'] if data['p1'] in SOURCE_OPTIONS else "YAHOO"
+                        # Handle old "MASSIVE" value if it exists in DB
+                        if data['p1'] == "MASSIVE": curr_p1 = "CAPITAL"
                         np1 = st.selectbox("Priority 1", SOURCE_OPTIONS, index=SOURCE_OPTIONS.index(curr_p1), key="e_p1")
                     with epc2:
                         curr_p2 = data['p2'] if data['p2'] in ["NONE"] + SOURCE_OPTIONS else "NONE"
+                        if data['p2'] == "MASSIVE": curr_p2 = "CAPITAL"
                         np2 = st.selectbox("Priority 2", ["NONE"] + SOURCE_OPTIONS, index=(["NONE"] + SOURCE_OPTIONS).index(curr_p2), key="e_p2")
                     with epc3:
                         opts = ["NONE"] + SOURCE_OPTIONS
                         curr_p3 = data.get('p3')
+                        if curr_p3 == "MASSIVE": curr_p3 = "CAPITAL"
                         if curr_p3 not in opts: curr_p3 = "NONE"
                         np3 = st.selectbox("Priority 3", opts, index=opts.index(curr_p3), key="e_p3")
 
                 if st.button("Update Symbol", type="primary"):
-                    if upsert_symbol_mapping(selected_ticker, ny_ticker, nm_ticker, nb_ticker, np1, np2, ntd_ticker, np3):
+                    if upsert_symbol_mapping(selected_ticker, ny_ticker, nm_ticker, nb_ticker, np1, np2, np3):
                         st.success(f"Updated {selected_ticker}")
                         time.sleep(0.5)
                         st.rerun()
@@ -114,9 +114,8 @@ def render_inventory_ui(db_map, inventory_list):
                 "P2": v['p2'],
                 "P3": v.get('p3', 'NONE'),
                 "Yahoo": v['yahoo_ticker'],
-                "Massive": v['massive_ticker'],
-                "Binance": v['binance_ticker'],
-                "TwelveData": v.get('twelve_data_ticker')
+                "Capital Epic": v['capital_epic'],
+                "Binance": v['binance_ticker']
             })
             
         st.dataframe(pd.DataFrame(table_data), use_container_width=True)
