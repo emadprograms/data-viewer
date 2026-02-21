@@ -1,6 +1,6 @@
-streamlit
 pandas
-libsql-client
+libsql-experimental
+altair
 requests
 urllib3
 pytz
