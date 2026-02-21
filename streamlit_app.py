@@ -29,7 +29,6 @@ def main():
     *   **Data Health Dashboard:** Check the completeness of the harvested data.
     *   **Database Inspector:** Peek into the raw records stored in Turso.
     *   **Inventory Manager:** Manage the list of symbols being harvested by the workflow.
-    *   **Manual Harvester:** Use only for "gap filling" or manual fixes if the automated workflow misses a day.
     
     ---
     
