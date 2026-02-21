@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 from datetime import timedelta
@@ -281,11 +282,11 @@ def render_inspector_ui(inventory_list):
     # Map intraday view modes to resample rules
     intraday_rules = {
         "Intraday (1m)": None,   # raw 1-minute
-        "Intraday (5m)": "5T",
-        "Intraday (15m)": "15T",
-        "Intraday (30m)": "30T",
-        "Intraday (1H)": "1H",
-        "Intraday (4H)": "4H",
+        "Intraday (5m)": "5min",
+        "Intraday (15m)": "15min",
+        "Intraday (30m)": "30min",
+        "Intraday (1H)": "1h",
+        "Intraday (4H)": "4h",
     }
 
     if view_mode == "Daily (1D)":
@@ -378,9 +379,18 @@ def render_inspector_ui(inventory_list):
         st.error(f"Failed to initialize chart: {e}")
         st.stop()
 
-    # --- Set data and render (no series methods used) ---
+    # --- Set data and render with a UNIQUE KEY to force remount on ticker change ---
     chart.set(chart_data)
-    chart.load()
+    # Build the HTML manually (bypassing chart.load() which lacks a key param)
+    for script in chart.win.final_scripts:
+        chart._html += '\n' + script
+    chart_key = f"chart_{selected_ticker}_{view_mode}_{days_back}_{show_ext}"
+    components.html(
+        f'{chart._html}</script></body></html>',
+        width=chart.width if isinstance(chart.width, int) else None,
+        height=chart.height,
+        key=chart_key,
+    )
 
     # ----------------------------------------------------
     # Raw Table
@@ -388,5 +398,5 @@ def render_inspector_ui(inventory_list):
     with st.expander("📄 Raw Data (UTC)", expanded=False):
         st.dataframe(
             df.sort_values('timestamp', ascending=False),
-            use_container_width=True
+            width='stretch'
         )

@@ -109,7 +109,8 @@ def render_health_dashboard(inventory_list):
 
                 st.dataframe(
                     health_pivot_df.style.map(style_heatmap).format("{:.0f}", na_rep=""),
-                    use_container_width=True, 
+                    hide_index=True,
+                    width='stretch', 
                     height=tight_height
                 )
             else:
