@@ -6,7 +6,6 @@ import libsql_experimental as libsql
 import os
 
 
-@st.cache_resource
 def get_db_connection():
     """Establishes a synchronous connection to the Turso database."""
     try:
