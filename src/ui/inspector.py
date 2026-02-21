@@ -381,15 +381,18 @@ def render_inspector_ui(inventory_list):
 
     # --- Set data and render with a UNIQUE KEY to force remount on ticker change ---
     chart.set(chart_data)
-    # Build the HTML manually (bypassing chart.load() which lacks a key param)
+    # Build the HTML manually
     for script in chart.win.final_scripts:
         chart._html += '\n' + script
-    chart_key = f"chart_{selected_ticker}_{view_mode}_{days_back}_{show_ext}"
+        
+    # By injecting a dynamic GUID comment into the HTML string itself,
+    # Streamlit is forced to recognize it as "new" content and re-render the iframe.
+    chart_key = f"<!-- RENDER_KEY: {selected_ticker}_{view_mode}_{days_back}_{show_ext} -->\n"
+    
     components.html(
-        f'{chart._html}</script></body></html>',
+        f'{chart_key}{chart._html}</script></body></html>',
         width=chart.width if isinstance(chart.width, int) else None,
         height=chart.height,
-        key=chart_key,
     )
 
     # ----------------------------------------------------
