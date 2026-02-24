@@ -4,7 +4,7 @@ from tests.conftest import FakeResult
 
 def test_init_db_creates_tables(monkeypatch, fake_client_factory):
     results = {
-        "SELECT count(*) FROM market_symbols": FakeResult(single=(0,)),
+        "SELECT count(*) FROM symbol_map": FakeResult(single=(0,)),
     }
     fake_client = fake_client_factory(results=results)
 
@@ -14,5 +14,5 @@ def test_init_db_creates_tables(monkeypatch, fake_client_factory):
     schema.init_db()
 
     executed = "\n".join(q for q, _ in fake_client.executed)
-    assert "CREATE TABLE IF NOT EXISTS market_symbols" in executed
+    assert "CREATE TABLE IF NOT EXISTS symbol_map" in executed
     assert "CREATE TABLE IF NOT EXISTS market_data" in executed

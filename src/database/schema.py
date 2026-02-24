@@ -13,32 +13,17 @@ def init_db():
         return
     
     try:
-        # --- NEW SCALABLE SCHEMA ---
-        # Only keeping display_name for symbols available in Turso
+        # --- PRIMARY INVENTORY TABLE ---
+        # Reverted to symbol_map
         client.execute("""
-            CREATE TABLE IF NOT EXISTS market_symbols (
-                display_name TEXT PRIMARY KEY
+            CREATE TABLE IF NOT EXISTS symbol_map (
+                display_name TEXT PRIMARY KEY,
+                yahoo_ticker TEXT,
+                massive_ticker TEXT,
+                binance_ticker TEXT
             )
         """)
 
-        # Fresh Seed if empty
-        row = client.execute("SELECT count(*) FROM market_symbols").fetchone()
-        count = row[0] if row else 0
-        
-        if count == 0:
-            # Fresh Seed
-            tickers = [
-                "SPY", "QQQ", "IWM", "DIA", "AMD", "AMZN", "AAPL", "NVDA", "TSLA",
-                "BTCUSDT", "ETHUSDT", "CL=F", "GC=F", "VIX"
-            ]
-            for t in tickers:
-                client.execute(
-                    "INSERT OR IGNORE INTO market_symbols (display_name) VALUES (?)",
-                    (t,)
-                )
-            client.commit()
-
-        
         # Table for storing all market data
         # CRITICAL: PRIMARY KEY (symbol, timestamp) forces SQLite to reject duplicates.
         # We store timestamp as a UTC String to ensure strict uniqueness.
@@ -61,4 +46,4 @@ def init_db():
         if st.runtime.exists():
             st.error(f"DB Init Error: {e}")
         else:
-            print(f"DB Init Error: {e}")
+            print(f"DB Error: {e}")

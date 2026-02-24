@@ -13,14 +13,15 @@ from src.config import UTC, US_EASTERN
 # --- Basic CRUD for Symbol Mapping ---
 
 def get_symbol_map_from_db():
-    """Fetches the complete symbol inventory from the table."""
+    """Fetches the complete symbol inventory from the symbol_map table."""
     client = get_db_connection()
     if not client:
         return {}
     try:
+        # Reverted to symbol_map
         res = client.execute("""
             SELECT display_name 
-            FROM market_symbols 
+            FROM symbol_map 
             ORDER BY display_name
         """).fetchall()
         
@@ -37,8 +38,9 @@ def upsert_symbol_mapping(display_name):
     if not client:
         return False
     try:
+        # Reverted to symbol_map
         client.execute(
-            "INSERT OR IGNORE INTO market_symbols (display_name) VALUES (?)",
+            "INSERT OR IGNORE INTO symbol_map (display_name) VALUES (?)",
             (display_name,)
         )
         client.commit()
@@ -53,7 +55,8 @@ def delete_symbol_mapping(ticker):
     if not client:
         return False
     try:
-        client.execute("DELETE FROM market_symbols WHERE display_name = ?", (ticker,))
+        # Reverted to symbol_map
+        client.execute("DELETE FROM symbol_map WHERE display_name = ?", (ticker,))
         client.commit()
         return True
     except Exception as e:
