@@ -4,7 +4,7 @@ This project is a Streamlit-based data visualization and management tool.
 
 ## Project Structure
 - `streamlit_app.py`: Main entry point for the Streamlit application.
-- `pages/`: Individual Streamlit pages for different functionalities (Data Health, DB Inspector, Inventory Manager).
+- `pages/`: Individual Streamlit pages for different functionalities (Data Health, DB Inspector).
 - `src/`: Core logic and data handling.
     - `database/`: DB connection, operations, and schema definitions.
     - `ui/`: UI components and logic for different modules.
