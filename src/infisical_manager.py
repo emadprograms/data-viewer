@@ -55,7 +55,8 @@ class InfisicalManager:
                 pass
 
         try:
-            self.client = InfisicalSDKClient()
+            # Must provide host for InfisicalSDKClient
+            self.client = InfisicalSDKClient(host="https://app.infisical.com")
             
             if client_id and client_secret:
                 # Universal Auth (Preferred)
@@ -84,13 +85,15 @@ class InfisicalManager:
             return self._secrets_cache[cache_key]
             
         try:
+            # Use environment_slug and secret_path as per documentation
             secret = self.client.secrets.get_secret_by_name(
                 secret_name=secret_name,
                 project_id=self.project_id,
-                environment=environment,
-                path=path
+                environment_slug=environment,
+                secret_path=path
             )
-            val = secret.secret_value 
+            # Based on inspection, the attribute is 'secretValue'
+            val = secret.secretValue
             self._secrets_cache[cache_key] = val
             return val
         except Exception:

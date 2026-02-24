@@ -26,6 +26,7 @@ The project uses **Infisical** as the single source of truth for secrets (Turso 
 
 ### A. The SDK & Implementation
 *   **Correct Package**: Always use `infisicalsdk` (installed via pip). In code, import as `infisical_sdk`.
+*   **Attribute Access**: Use `secret.secretValue` (camelCase) for attribute access when using the new SDK.
 *   **Manager Pattern**: All logic is encapsulated in `src/infisical_manager.py`. It initializes the client and handles authentication state.
 *   **Usage**: Entry points initialize the manager and fetch secrets during application startup.
 
