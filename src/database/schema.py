@@ -22,9 +22,10 @@ def init_db():
         """)
 
         # Fresh Seed if empty
-        res_new = client.execute("SELECT count(*) FROM market_symbols").fetchone()
+        row = client.execute("SELECT count(*) FROM market_symbols").fetchone()
+        count = row[0] if row else 0
         
-        if res_new and res_new[0] == 0:
+        if count == 0:
             # Fresh Seed
             tickers = [
                 "SPY", "QQQ", "IWM", "DIA", "AMD", "AMZN", "AAPL", "NVDA", "TSLA",
@@ -32,9 +33,10 @@ def init_db():
             ]
             for t in tickers:
                 client.execute(
-                    "INSERT INTO market_symbols (display_name) VALUES (?)",
+                    "INSERT OR IGNORE INTO market_symbols (display_name) VALUES (?)",
                     (t,)
                 )
+            client.commit()
 
         
         # Table for storing all market data
@@ -53,7 +55,10 @@ def init_db():
                 PRIMARY KEY (symbol, timestamp)
             )
         """)
+        client.commit()
                 
     except Exception as e:
         if st.runtime.exists():
             st.error(f"DB Init Error: {e}")
+        else:
+            print(f"DB Init Error: {e}")
