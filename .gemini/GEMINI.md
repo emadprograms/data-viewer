@@ -19,19 +19,29 @@ This project is a Streamlit-based data visualization and management tool.
 ## Development Guidelines
 - Follow Streamlit best practices for UI and state management.
 - Keep database operations centralized in `src/database/operations.py`.
+- **Database Connection**: Use `src/database/connection.py` which retrieves credentials from Infisical.
 
 ## 🔐 1. Secrets Management (Infisical)
 
-The project uses **Infisical** as the single source of truth for secrets (Turso URLs, API Keys, Webhooks).
+The project uses **Infisical** as the single source of truth for secrets (Turso URLs, Auth Tokens).
 
 ### A. The SDK & Implementation
 *   **Correct Package**: Always use `infisicalsdk` (installed via pip). In code, import as `infisical_sdk`.
-*   **Attribute Access**: Use `secret.secretValue` (camelCase) for attribute access when using the new SDK.
+*   **Client Initialization**: Must provide `host="https://app.infisical.com"` to `InfisicalSDKClient`.
+*   **Secret Retrieval**: Use `client.secrets.get_secret_by_name()` with parameters:
+    *   `secret_name`
+    *   `project_id`
+    *   `environment_slug` (e.g., "dev")
+    *   `secret_path` (e.g., "/")
+*   **Attribute Access**: Use `secret.secretValue` (camelCase) to get the string value.
 *   **Manager Pattern**: All logic is encapsulated in `src/infisical_manager.py`. It initializes the client and handles authentication state.
-*   **Usage**: Entry points initialize the manager and fetch secrets during application startup.
 
-### B. Authentication Methods
-The manager supports two distinct authentication flows via environment variables:
+### B. Important Secret Names
+*   **Turso URL**: `turso_arshademad_stockdataarchive_db_url`
+*   **Turso Token**: `turso_arshademad_stockdataarchive_auth_token`
+
+### C. Authentication Methods
+The manager supports two distinct authentication flows via environment variables or `.streamlit/secrets.toml`:
 1.  **Service Token (Legacy/Simple)**:
     *   Requires: `INFISICAL_TOKEN`.
     *   Auth Call: `client.auth.login(token=INFISICAL_TOKEN)`.
