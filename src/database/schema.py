@@ -13,7 +13,7 @@ def init_db():
         return
     
     try:
-        # --- PRIMARY INVENTORY TABLE ---
+        # --- PRIMARY SYMBOL TABLE ---
         # Reverted to symbol_map
         client.execute("""
             CREATE TABLE IF NOT EXISTS symbol_map (

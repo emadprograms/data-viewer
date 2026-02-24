@@ -86,84 +86,15 @@ def check_integrity(df):
 
 
 # ----------------------------------------------------
-# Normalize DF -> lightweight-charts format (Area)
-# (Kept for potential reuse; not used by StreamlitChart.set)
-# ----------------------------------------------------
-def normalize_for_chart(df):
-    """
-    Prepares dataframe for Lightweight Charts (Area/Line).
-    Uses ALL data (Pre, Reg, Post) for granular inspection.
-    """
-    df = df.sort_values('timestamp').copy()
-    chart_data = []
-
-    for _, row in df.iterrows():
-        ts = row['timestamp']
-        if not isinstance(ts, pd.Timestamp):
-            ts = pd.to_datetime(ts, utc=True)
-        ts_unix = int(ts.timestamp())
-        val = row['close']
-        if pd.isna(val):
-            continue
-        chart_data.append({"time": ts_unix, "value": float(val)})
-
-    return chart_data
-
-
-# ----------------------------------------------------
-# Normalize DF -> Daily Candles (OHLC)
-# (Kept for potential reuse; not used by StreamlitChart.set)
-# ----------------------------------------------------
-def normalize_for_daily_candles(df):
-    """
-    Aggregates 1-minute data into Daily Candles (OHLC).
-    Uses UTC days (00:00-23:59) for consistency.
-    
-    CRITICAL: Filters for 'REG' session only. 
-    Pre/Post market spikes should NOT affect the Daily Candle High/Low.
-    """
-    df = df.sort_values('timestamp').copy()
-    
-    # --- FILTER: Regular Session Only ---
-    if 'session' in df.columns:
-        df = df[df['session'] == 'REG']
-    
-    df = df.set_index('timestamp')
-    
-    # Resample to Daily
-    daily = df.resample('D').agg({
-        'open': 'first',
-        'high': 'max',
-        'low': 'min',
-        'close': 'last'
-    }).dropna()
-    
-    chart_data = []
-    for ts, row in daily.iterrows():
-        if pd.isna(row['open']) or row['open'] == 0:
-            continue
-            
-        ts_unix = int(ts.timestamp())
-        chart_data.append({
-            "time": ts_unix,
-            "open": float(row['open']),
-            "high": float(row['high']),
-            "low": float(row['low']),
-            "close": float(row['close'])
-        })
-    return chart_data
-
-
-# ----------------------------------------------------
 # UI Renderer
 # ----------------------------------------------------
-def render_inspector_ui(inventory_list):
+def render_inspector_ui(symbol_list):
     st.subheader("🔎 Database Inspector (The Truth)")
 
     # --- Controls ---
     c1, c2, c3 = st.columns([2, 1, 1])
     with c1:
-        selected_ticker = st.selectbox("Select Ticker", inventory_list)
+        selected_ticker = st.selectbox("Select Ticker", symbol_list)
     with c2:
         # DEFAULT: 30‑day lookback
         days_back = st.number_input("Lookback Days", min_value=1, value=30)

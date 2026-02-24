@@ -10,4 +10,3 @@ def test_schema_cols_shape():
 def test_timezones_present():
     assert str(config.UTC) == "UTC"
     assert "US/Eastern" in str(config.US_EASTERN)
-    assert "Asia/Bahrain" in str(config.BAHRAIN_TZ)

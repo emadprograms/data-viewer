@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from src.database.operations import fetch_data_health_matrix
 from src.config import US_EASTERN
 
-def render_health_dashboard(inventory_list):
+def render_health_dashboard(symbol_list):
     """Renders the data health dashboard UI section."""
     st.subheader("🗓️ Data Health Dashboard")
     st.info("Check the completeness of your data library. Cells show the number of candles collected.")
@@ -61,7 +61,7 @@ def render_health_dashboard(inventory_list):
     else:
         end_date = datetime(selected_year, month_idx + 1, 1).date() - timedelta(days=1)
     
-    selected_tickers = st.multiselect("Select Symbols", inventory_list, default=inventory_list)
+    selected_tickers = st.multiselect("Select Symbols", symbol_list, default=symbol_list)
     
     if st.button("🔍 Generate Health Report", type="primary") and selected_tickers:
         with st.spinner(f"Querying {session_mode} data health for {selected_month} {selected_year}..."):

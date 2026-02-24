@@ -23,7 +23,6 @@ def main():
     
     *   **Data Health Dashboard:** Check the completeness and integrity of stored data.
     *   **Database Inspector:** Browse and visualize the raw records.
-    *   **Inventory Manager:** Manage the list of symbols being monitored.
     
     ---
     

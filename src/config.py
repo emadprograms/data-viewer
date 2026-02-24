@@ -5,7 +5,6 @@ from pytz import timezone
 
 # Timezone Configuration
 US_EASTERN = timezone('US/Eastern')
-BAHRAIN_TZ = timezone('Asia/Bahrain')
 UTC = timezone('UTC')
 
 # Data Schema

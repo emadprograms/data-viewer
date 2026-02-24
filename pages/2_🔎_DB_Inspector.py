@@ -12,6 +12,6 @@ st.set_page_config(
 st.title("🔎 Database Inspector")
 
 db_map = get_symbol_map_from_db()
-inventory_list = sorted(list(db_map.keys()))
+symbol_list = sorted(list(db_map.keys()))
 
-render_inspector_ui(inventory_list)
+render_inspector_ui(symbol_list)

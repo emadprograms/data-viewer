@@ -14,6 +14,6 @@ st.title("🏥 Data Health Dashboard")
 # Initialize DB connection implicitly handled by operations if needed, 
 # but mostly we just need the symbol map here.
 db_map = get_symbol_map_from_db()
-inventory_list = sorted(list(db_map.keys()))
+symbol_list = sorted(list(db_map.keys()))
 
-render_health_dashboard(inventory_list)
+render_health_dashboard(symbol_list)
