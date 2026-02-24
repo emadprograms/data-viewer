@@ -3,7 +3,7 @@ from src.database.operations import get_symbol_map_from_db
 from src.ui.inventory import render_inventory_ui
 
 st.set_page_config(
-    page_title="Inventory Manager | Harvester", 
+    page_title="Inventory Manager | Data Viewer", 
     page_icon="📦", 
     layout="wide",
     initial_sidebar_state="expanded"

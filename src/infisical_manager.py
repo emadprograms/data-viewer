@@ -1,11 +1,10 @@
-from infisical_client import InfisicalClient, ClientSettings, GetSecretOptions, AuthenticationOptions, UniversalAuthMethod
+from infisical_sdk import InfisicalSDKClient
 import os
 import toml
 import threading
 
 class InfisicalManager:
     _instance = None
-    _massive_keys_cache = None
     _cache_lock = threading.Lock()
 
     def __new__(cls):
@@ -27,8 +26,9 @@ class InfisicalManager:
         client_id = os.getenv("INFISICAL_CLIENT_ID")
         client_secret = os.getenv("INFISICAL_CLIENT_SECRET")
         self.project_id = os.getenv("INFISICAL_PROJECT_ID")
+        service_token = os.getenv("INFISICAL_TOKEN")
         
-        if not client_id:
+        if not client_id and not service_token:
             try:
                 # Attempt to load from .streamlit/secrets.toml if env vars are missing
                 secrets_path = ".streamlit/secrets.toml"
@@ -38,10 +38,11 @@ class InfisicalManager:
                     client_id = sec.get("client_id")
                     client_secret = sec.get("client_secret")
                     self.project_id = sec.get("project_id")
+                    service_token = sec.get("token")
             except Exception:
                 pass
 
-        if not client_id:
+        if not client_id and not service_token:
             try:
                 # Streamlit Cloud injects secrets into st.secrets
                 import streamlit as st
@@ -49,90 +50,48 @@ class InfisicalManager:
                     client_id = st.secrets["infisical"].get("client_id")
                     client_secret = st.secrets["infisical"].get("client_secret")
                     self.project_id = st.secrets["infisical"].get("project_id")
+                    service_token = st.secrets["infisical"].get("token")
             except Exception:
                 pass
 
-        if client_id and client_secret and self.project_id:
-            try:
-                # Initialize Infisical Client
-                auth_method = UniversalAuthMethod(
+        try:
+            self.client = InfisicalSDKClient()
+            
+            if client_id and client_secret:
+                # Universal Auth (Preferred)
+                self.client.auth.universal_auth.login(
                     client_id=client_id,
                     client_secret=client_secret
                 )
-                
-                self.client = InfisicalClient(ClientSettings(
-                    auth=AuthenticationOptions(
-                        universal_auth=auth_method
-                    )
-                ))
                 self.is_connected = True
-                self._initialized = True
-                # logger.log("✅ Infisical Connected") # Noisy in parallel
-            except Exception as e:
-                # logger.log(f"   ❌ Infisical Connection Failed: {e}")
-                pass
+            elif service_token:
+                # Service Token (Legacy)
+                self.client.auth.login(token=service_token)
+                self.is_connected = True
 
-    def get_secret(self, secret_name):
+            if self.is_connected:
+                self._initialized = True
+        except Exception as e:
+            # print(f"❌ Infisical Connection Failed: {e}")
+            pass
+
+    def get_secret(self, secret_name, environment="dev", path="/"):
         if not self.is_connected: 
             return None
         
-        if secret_name in self._secrets_cache:
-            return self._secrets_cache[secret_name]
+        cache_key = f"{environment}:{path}:{secret_name}"
+        if cache_key in self._secrets_cache:
+            return self._secrets_cache[cache_key]
             
         try:
-            # NOTE: Use snake_case for options
-            secret = self.client.getSecret(options=GetSecretOptions(
+            secret = self.client.secrets.get_secret_by_name(
                 secret_name=secret_name,
                 project_id=self.project_id,
-                environment="dev",
-                path="/"
-            ))
-            # NOTE: Use snake_case for attribute access (.secret_value, NOT .secretValue)
+                environment=environment,
+                path=path
+            )
             val = secret.secret_value 
-            self._secrets_cache[secret_name] = val
+            self._secrets_cache[cache_key] = val
             return val
         except Exception:
             return None
-
-    def get_massive_api_keys(self):
-        """
-        Retrieves all 9 identified Massive API keys for rotation.
-        Uses a shared class-level cache to avoid redundant slow calls in parallel threads.
-        """
-        with self._cache_lock:
-            if InfisicalManager._massive_keys_cache is not None:
-                return InfisicalManager._massive_keys_cache
-            
-            keys = []
-            
-            # 1. New keys from "minephysical" / "Stock Data Archive"
-            discovered_keys = [
-                "massive-arshademad",
-                "massive-fbbfecc3",
-                "massive-ghf44378",
-                "massive-emadarshadalam",
-                "massive-arshadbah",
-                "massive-dunola8439",
-                "massive-fifamobile8439",
-                "massive-emadarshadalam1",
-                "massive-hamzaarshadalam"
-            ]
-            
-            print(f"   🔐 Bootstrapping Massive keys from Infisical (First time sync)...")
-            for nk in discovered_keys:
-                val = self.get_secret(nk)
-                if val: keys.append(val)
-
-            # 2. Legacy/Standard keys fallback
-            legacy_base = self.get_secret("massive_stock_data_API_KEY")
-            if legacy_base and legacy_base not in keys: 
-                keys.append(legacy_base)
-                
-            for i in range(1, 11):
-                ki = self.get_secret(f"massive_stock_data_API_KEY_{i}")
-                if ki and ki not in keys:
-                    keys.append(ki)
-            
-            InfisicalManager._massive_keys_cache = keys
-            print(f"   ✅ Successfully cached {len(keys)} Massive API keys.")
-            return keys

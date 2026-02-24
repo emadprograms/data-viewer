@@ -6,5 +6,7 @@ urllib3
 pytz
 lightweight-charts
 altair
-infisical-python>=2.0.0
+streamlit
+pytest
+infisicalsdk
 toml

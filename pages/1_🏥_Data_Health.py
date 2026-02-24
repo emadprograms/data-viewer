@@ -3,7 +3,7 @@ from src.database.operations import get_symbol_map_from_db
 from src.ui.health import render_health_dashboard
 
 st.set_page_config(
-    page_title="Data Health | Harvester", 
+    page_title="Data Health | Data Viewer", 
     page_icon="🏥", 
     layout="wide",
     initial_sidebar_state="expanded"

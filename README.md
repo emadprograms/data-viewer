@@ -1,6 +1,6 @@
 # 📈 Data Viewer
 
-A Streamlit-based dashboard for visualizing and monitoring data harvested by the Stock Data Harvester.
+A Streamlit-based dashboard for visualizing and monitoring market data.
 
 ## 🛠 Features
 

@@ -12,54 +12,34 @@ from src.config import UTC, US_EASTERN
 
 # --- Basic CRUD for Symbol Mapping ---
 
-# --- Basic CRUD for Symbol Mapping ---
-
 def get_symbol_map_from_db():
-    """Fetches the complete symbol inventory from the new table."""
+    """Fetches the complete symbol inventory from the table."""
     client = get_db_connection()
     if not client:
         return {}
     try:
-        # Fetch from new table
         res = client.execute("""
-            SELECT display_name, yahoo_ticker, capital_epic, binance_ticker, priority_1, priority_2, priority_3 
+            SELECT display_name 
             FROM market_symbols 
             ORDER BY display_name
         """).fetchall()
         
-        # Return a dictionary structured for the app
         inventory = {}
         for row in res:
-            inventory[row[0]] = {
-                'yahoo_ticker': row[1],
-                'capital_epic': row[2], 
-                'binance_ticker': row[3],
-                'p1': row[4],
-                'p2': row[5],
-                'p3': row[6]
-            }
+            inventory[row[0]] = {}
         return inventory
     except Exception:
         return {}
 
-def upsert_symbol_mapping(display_name, y_ticker, m_ticker, b_ticker, p1, p2, p3=None):
-    """Adds or updates a symbol's rules."""
+def upsert_symbol_mapping(display_name):
+    """Adds a symbol to the inventory."""
     client = get_db_connection()
     if not client:
         return False
     try:
-        # Check if column exists, if not, migration handles it, but safe insert:
         client.execute(
-            """INSERT INTO market_symbols (display_name, yahoo_ticker, capital_epic, binance_ticker, priority_1, priority_2, priority_3) 
-               VALUES (?, ?, ?, ?, ?, ?, ?) 
-               ON CONFLICT(display_name) DO UPDATE SET 
-                 yahoo_ticker=excluded.yahoo_ticker, 
-                 capital_epic=excluded.capital_epic,
-                 binance_ticker=excluded.binance_ticker,
-                 priority_1=excluded.priority_1,
-                 priority_2=excluded.priority_2,
-                 priority_3=excluded.priority_3""",
-            (display_name, y_ticker, m_ticker, b_ticker, p1, p2, p3)
+            "INSERT OR IGNORE INTO market_symbols (display_name) VALUES (?)",
+            (display_name,)
         )
         client.commit()
         return True
@@ -98,30 +78,29 @@ def save_data_to_turso(df: pd.DataFrame, logger=None):
         # 1. Copy and Normalize Timestamp
         batch_df = df.copy()
         
-        # FIX: Added utc=True to handle timezone-aware inputs gracefully
         if not pd.api.types.is_datetime64_any_dtype(batch_df['timestamp']):
             batch_df['timestamp'] = pd.to_datetime(batch_df['timestamp'], utc=True)
 
-        # 2. FORCE UTC CONVERSION (Double safety)
+        # 2. FORCE UTC CONVERSION
         if batch_df['timestamp'].dt.tz is not None:
             batch_df['timestamp'] = batch_df['timestamp'].dt.tz_convert(UTC)
         else:
             batch_df['timestamp'] = batch_df['timestamp'].dt.tz_localize(UTC)
 
-        # 3. Create String for SQLite (Removes Offset confusion)
+        # 3. Create String for SQLite
         batch_df['timestamp_str'] = batch_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
         # 4. Prepare Batch
         rows_to_insert = []
         for _, row in batch_df.iterrows():
             rows_to_insert.append((
-                row['timestamp_str'], # The UTC String
+                row['timestamp_str'],
                 row['symbol'],
                 row['open'], row['high'], row['low'], row['close'], row['volume'],
                 row['session']
             ))
 
-        # 5. Execute Batch (INSERT OR REPLACE updates duplicates)
+        # 5. Execute Batch
         BATCH_SIZE = 100
         
         if logger:
@@ -138,33 +117,28 @@ def save_data_to_turso(df: pd.DataFrame, logger=None):
                 VALUES {placeholders}
             """
             client.execute(query, flat_values)
-            time.sleep(0.05) # Gentle on the DB
+            time.sleep(0.05)
             
         client.commit()
         return True
 
     except Exception as e:
-        # Improved Error Logging to see exactly what failed
         err = f"Save Error: {e}"
         if logger: logger.log(f"   ❌ {err}")
         elif st.runtime.exists(): st.error(err)
-        print(err) # Print to console for extra visibility
+        print(err)
         return False
 
 
 def fetch_data_health_matrix(tickers: list, start_date, end_date, session_filter="Total"):
     """
     Fetches data, CONVERTS TO US/EASTERN, and then groups by day.
-    This solves the issue where post-market data (8 PM ET) looks like tomorrow in UTC.
     """
     client = get_db_connection()
     if not client:
         return pd.DataFrame()
 
-    # Fetch slightly wider range to account for TZ shifts
-    # We fetch the Raw UTC data first
     start_str = f"{start_date} 00:00:00" 
-    # End date + 1 day to catch the UTC spillover
     end_dt_buffer = end_date + pd.Timedelta(days=1)
     end_str = f"{end_dt_buffer} 23:59:59"
 
@@ -183,30 +157,19 @@ def fetch_data_health_matrix(tickers: list, start_date, end_date, session_filter
         if not res:
             return pd.DataFrame()
             
-        # Convert to Pandas
         df = pd.DataFrame([list(row) for row in res], columns=['timestamp', 'symbol', 'session'])
-        
-        # 1. Parse UTC String
         df['timestamp'] = pd.to_datetime(df['timestamp']).dt.tz_localize(UTC)
-        
-        # 2. Convert to US Eastern (The "Trading View")
         df['timestamp_et'] = df['timestamp'].dt.tz_convert(US_EASTERN)
-        
-        # 3. Extract the Date from the EASTERN time
-        # This ensures 8 PM ET stays on "Today"
         df['day'] = df['timestamp_et'].dt.date
         
-        # 4. Apply Session Filter
         if session_filter != "Total":
             df = df[df['session'] == session_filter]
             
-        # 5. Filter strictly for requested date range (based on ET date)
         df = df[(df['day'] >= start_date) & (df['day'] <= end_date)]
         
         if df.empty:
             return pd.DataFrame()
 
-        # 6. Group and Pivot
         grouped = df.groupby(['symbol', 'day']).size().reset_index(name='candle_count')
         pivot_df = grouped.pivot(index='symbol', columns='day', values='candle_count')
         
