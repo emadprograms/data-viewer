@@ -28,3 +28,4 @@ dist/
 # VSCode
 .vscode/
 .DS_Store
+pytest.ini
