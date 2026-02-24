@@ -1,26 +1,27 @@
 # 📈 Data Viewer
 
-A Streamlit-based dashboard for visualizing and monitoring market data.
+A Streamlit-based dashboard for visualizing and monitoring market data stored in Turso.
 
 ## 🛠 Features
 
-- **Health Dashboard**: Monitor the status of daily harvests.
-- **Data Inspection**: View detailed market data records from the Turso "Stock Data Archive".
-- **Visual Analytics**: Interactive charts using `lightweight-charts`.
+- **Health Dashboard**: Monitor the status and completeness of collected data.
+- **Database Inspector**: View raw market records with high-performance interactive charts.
+- **Visual Analytics**: Visual audit of data integrity using `lightweight-charts`.
 
 ## 📁 Repository Structure
 
-- `app.py`: Main Streamlit entry point.
-- `pages/`: Additional dashboard sub-pages.
+- `streamlit_app.py`: Main Streamlit entry point.
+- `pages/`: Individual dashboard sub-pages for Health and Inspection.
 - `src/`:
-  - `database/`: Turso connection and data retrieval logic.
-  - `ui/`: Custom UI components and styling.
+  - `database/`: Turso connection and data operations.
+  - `ui/`: Custom UI components for each dashboard.
+  - `infisical_manager.py`: Secrets management via Infisical.
 
 ## 🚀 Usage
 
 ```bash
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 ---

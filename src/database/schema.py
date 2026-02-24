@@ -17,10 +17,7 @@ def init_db():
         # Reverted to symbol_map
         client.execute("""
             CREATE TABLE IF NOT EXISTS symbol_map (
-                display_name TEXT PRIMARY KEY,
-                yahoo_ticker TEXT,
-                massive_ticker TEXT,
-                binance_ticker TEXT
+                display_name TEXT PRIMARY KEY
             )
         """)
 
