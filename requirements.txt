@@ -1,6 +1,5 @@
 pandas
 libsql-experimental
-altair<5
 requests
 urllib3
 pytz

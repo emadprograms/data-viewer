@@ -6,7 +6,7 @@ A Streamlit-based dashboard for visualizing and monitoring market data.
 
 - **Health Dashboard**: Monitor the status of daily harvests.
 - **Data Inspection**: View detailed market data records from the Turso "Stock Data Archive".
-- **Visual Analytics**: Interactive charts using `lightweight-charts` and `altair`.
+- **Visual Analytics**: Interactive charts using `lightweight-charts`.
 
 ## 📁 Repository Structure
 
