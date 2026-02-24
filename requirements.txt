@@ -1,11 +1,10 @@
 pandas
 libsql-experimental
-altair
+altair<5
 requests
 urllib3
 pytz
 lightweight-charts
-altair
 streamlit
 pytest
 infisicalsdk
